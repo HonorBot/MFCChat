@@ -38,6 +38,7 @@ public:
 	afx_msg void OnBnClickedDisconnectBtn();
 
 	CString CatShowString(CString csInfo, CString strMsg);
+	WCHAR* GetName();
 	
 
 	CMySocket* m_client;

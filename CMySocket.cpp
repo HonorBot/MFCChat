@@ -17,10 +17,18 @@ void CMySocket::OnConnect(int nErrorCode)
 	TRACE("####OnConnect");
 	//此行代码记住
 	CMFCCharClientDlg* dlg = (CMFCCharClientDlg*)AfxGetApp()->GetMainWnd();
-	CString csInfo = _T("与服务器连接成功");
-	CString csMsg = _T("");
-	CString csShow = dlg->CatShowString(csInfo, csMsg);
-	dlg->m_list.AddString(csShow);
+	if (nErrorCode == 0) {
+		CString csInfo = _T("与服务器连接成功");
+		CString csMsg = _T("");
+		CString csShow = dlg->CatShowString(csInfo, csMsg);
+		dlg->m_list.AddString(csShow);
+	}
+	else {
+		CString csInfo = _T("未能连接到服务器");
+		CString csMsg = _T("");
+		CString csShow = dlg->CatShowString(csInfo, csMsg);
+		dlg->m_list.AddString(csShow);
+	}
 	CAsyncSocket::OnSend(nErrorCode);
 }
 
@@ -66,4 +74,14 @@ void CMySocket::OnReceive(int nErrorCode)
 	}
 
 	CAsyncSocket::OnReceive(nErrorCode);
+}
+
+void CMySocket::OnClose(int nErrorCode)
+{
+	TRACE("####Client OnClose");
+	CMFCCharClientDlg* dlg = (CMFCCharClientDlg*)AfxGetApp()->GetMainWnd();
+	dlg->m_client->ShutDown();
+	dlg->m_client->Close();
+	dlg->m_client = NULL;
+	dlg->m_list.AddString(_T("服务器已断开连接"));
 }

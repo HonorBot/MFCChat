@@ -113,23 +113,9 @@ BOOL CMFCCharClientDlg::OnInitDialog()
 	GetDlgItem(IDC_IPADDRESS1)->SetWindowText(_T("127.0.0.1"));
 
 	//从配置文件里读取昵称
-	WCHAR wszName[MAX_PATH] = { 0 };
-	WCHAR strPath[MAX_PATH] = { 0 };
-	//获取当前路径
-	GetCurrentDirectoryW(MAX_PATH, strPath);
-	CString csFilePath;
-	csFilePath.Format(L"%ls//Test.ini", strPath);
-	DWORD dwNum = GetPrivateProfileStringW(_T("CLIENT"), _T("NAME"),NULL, 
-		wszName,MAX_PATH, csFilePath);
-	if (dwNum > 0) {
-		SetDlgItemTextW(IDC_NAME_EDIT, wszName);
-		UpdateData(FALSE);
-	}
-	else {
-		WritePrivateProfileStringW(_T("CLIENT"), _T("NAME"), L"客户端", csFilePath);
-		SetDlgItemTextW(IDC_NAME_EDIT, L"客户端");
-		UpdateData(FALSE);
-	}
+	SetDlgItemTextW(IDC_NAME_EDIT, GetName());
+	UpdateData(FALSE);
+	
 
 	
 
@@ -195,6 +181,25 @@ CString CMFCCharClientDlg::CatShowString(CString csInfo, CString csMsg) {
 	return csShow;
 }
 
+//从配置文件里读取昵称
+WCHAR* CMFCCharClientDlg::GetName()
+{
+	
+	WCHAR wszName[MAX_PATH] = { 0 };
+	WCHAR strPath[MAX_PATH] = { 0 };
+	//获取当前路径
+	GetCurrentDirectoryW(MAX_PATH, strPath);
+	CString csFilePath;
+	csFilePath.Format(L"%ls//Test.ini", strPath);
+	DWORD dwNum = GetPrivateProfileStringW(_T("CLIENT"), _T("NAME"), NULL,
+		wszName, MAX_PATH, csFilePath);
+	if (dwNum <= 0)  {
+		WritePrivateProfileStringW(_T("CLIENT"), _T("NAME"), L"客户端", csFilePath);
+		wcscpy_s(wszName, L"客户端");
+	}
+	return wszName;
+}
+
 
 void CMFCCharClientDlg::OnBnClickedConnectBtn()
 {
@@ -228,38 +233,45 @@ void CMFCCharClientDlg::OnBnClickedConnectBtn()
 	}
 }
 
-
-
-
+//与服务器断开连接
 void CMFCCharClientDlg::OnBnClickedDisconnectBtn()
 {
 	// TODO: 在此添加控件通知处理程序代码
+	m_client->ShutDown();
+	m_client->Close();
+	m_client = NULL;
+	m_list.AddString(CatShowString(_T(""),_T("与服务器断开连接")));
 }
 
 
-
+//发送消息
 void CMFCCharClientDlg::OnBnClickedSendBtn()
 {
 	// TODO: 在此添加控件通知处理程序代码
+	if (!m_client) {
+		MessageBox(_T("没有连接的服务器"));
+		return;
+	}
 	//1获取编辑框内容
 	CString csTmpMsg;
 	GetDlgItem(IDC_SENDMSG_EDIT)->GetWindowTextW(csTmpMsg);
+	if (csTmpMsg == "") {
+		MessageBox(_T("请输入要发送的信息"));
+		return;
+	}
 
 	//获取昵称
 	
 	CString csName;
 	GetDlgItem(IDC_NAME_EDIT)->GetWindowTextW(csName);
 	csTmpMsg = csName + _T("：") + csTmpMsg;
-
 	USES_CONVERSION;
 	char* szSendBuf = T2A(csTmpMsg);
-
 
 	//2发送给服务端
 	if (m_client->Send(szSendBuf, SEND_MAX_BUF, 0) != SOCKET_ERROR) {
 		//3显示到列表框
 		CString csShow;
-
 
 		//拼接字符串
 		csShow = CatShowString(_T(""), csTmpMsg);
@@ -285,6 +297,7 @@ void CMFCCharClientDlg::OnBnClickedSavenameButton()
 	GetDlgItemText(IDC_NAME_EDIT, csName);
 	if (csName.GetLength() <= 0) {
 		MessageBox(L"昵称不能为空");
+		SetDlgItemText(IDC_NAME_EDIT, GetName());
 		return;
 	}
 	if (IDOK == AfxMessageBox(_T("是否修改昵称？"), MB_OKCANCEL)) {
